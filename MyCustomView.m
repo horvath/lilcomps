@@ -1,8 +1,8 @@
 //
 //  MyCustomView.m
-//  RotateMe
+//  RedSquare
 //
-//  Created by David Nolen on 2/16/09.
+//  Created by David Nolen on 2/16/09. Modified by Peter Horvath on 2/21/09.
 //  Copyright 2009 David Nolen. All rights reserved.
 //
 
@@ -26,7 +26,12 @@
 	// instantiated by the nib
 	squareSize = 100.0f;
 	twoFingers = NO;
-	rotation = 0.5f;
+	oneFinger = NO;
+	rotateLeft = NO;
+	rotateRight = NO;
+	rotationRight = 0.5f;
+	rotationLeft = -0.5f;
+
 	// You have to explicity turn on multitouch for the view
 	self.multipleTouchEnabled = YES;
 	
@@ -64,11 +69,30 @@
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
-	NSLog(@"touches began count %d, %@", [touches count], touches);
+	//NSLog(@"touches began count %d, %@", [touches count], touches);
+
+	UITouch *theTouch = [touches anyObject];
+	CGPoint point = [theTouch locationInView:nil]; //only used for log
+	NSLog(@"touches began at x: %f and y: %f", point.x, point.y);
 	
-	if([touches count] > 1)
+	if([touches count] == 1 && point.x < 160)
+	{
+		oneFinger = YES;
+		rotateLeft = YES;
+		NSLog(@"%d finger, left side", [touches count]);
+	}
+
+	else if([touches count] == 1 && point.x > 160)
+	{
+		oneFinger = YES;
+		rotateRight = YES;
+		NSLog(@"%d finger, right side", [touches count]);
+	}
+	
+	else if([touches count] == 2)
 	{
 		twoFingers = YES;
+		NSLog(@"%d fingers", [touches count]);
 	}
 	
 	// tell the view to redraw
@@ -77,18 +101,21 @@
 
 - (void) touchesMoved:(NSSet*)touches withEvent:(UIEvent*)event
 {
-	NSLog(@"touches moved count %d, %@", [touches count], touches);
-	
+	//NSLog(@"touches moved count %d, %@", [touches count], touches);
+		
 	// tell the view to redraw
 	[self setNeedsDisplay];
 }
 
 - (void) touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
-	NSLog(@"touches moved count %d, %@", [touches count], touches);
+	//NSLog(@"touches moved count %d, %@", [touches count], touches);
 	
 	// reset the var
 	twoFingers = NO;
+	oneFinger = NO;
+	rotateLeft = NO;
+	rotateRight = NO;
 	
 	// tell the view to redraw
 	[self setNeedsDisplay];
@@ -96,7 +123,7 @@
 
 - (void) drawRect:(CGRect)rect
 {
-	NSLog(@"drawRect");
+	//NSLog(@"drawRect");
 	
 	CGFloat centerx = rect.size.width/2;
 	CGFloat centery = rect.size.height/2;
@@ -109,21 +136,28 @@
 	// like Processing pushMatrix
 	CGContextSaveGState(context);
 	CGContextTranslateCTM(context, centerx, centery);
-	
-	// Uncomment to see the rotated square
-	//CGContextRotateCTM(context, rotation);
-	
+		
 	// Set red stroke
 	CGContextSetRGBStrokeColor(context, 1.0, 0.0, 0.0, 1.0);
 	
 	// Set different based on multitouch
-	if(!twoFingers)
+	if(oneFinger && rotateLeft)
 	{
-		CGContextSetRGBFillColor(context, 0.0, 1.0, 0.0, 1.0);
+		CGContextSetRGBFillColor(context, 0.0, 1.0, 1.0, 1.0);	
+		CGContextRotateCTM(context, rotationLeft);
+	}
+	else if(oneFinger && rotateRight)
+	{
+		CGContextSetRGBFillColor(context, 0.0, 1.0, 1.0, 1.0);	
+		CGContextRotateCTM(context, rotationRight);
+	}	
+	else if(twoFingers)
+	{
+		CGContextSetRGBFillColor(context, 1.0, 0.0, 0.0, 1.0);
 	}
 	else
 	{
-		CGContextSetRGBFillColor(context, 0.0, 1.0, 1.0, 1.0);
+		CGContextSetRGBFillColor(context, 0.0, 1.0, 0.0, 1.0);
 	}
 	
 	// Draw a rect with a red stroke

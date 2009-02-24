@@ -28,6 +28,7 @@
 	rotation = 0;
 	oneFinger = NO;
 	twoFingers = NO;
+	firstRun = YES;	
 	
 	// You have to explicity turn on multitouch for the view
 	self.multipleTouchEnabled = YES;
@@ -67,9 +68,9 @@
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
 	//NSLog(@"touches began count %d, %@", [touches count], touches);
-
+	
 	touches = [event allTouches];
-
+	
 	UITouch *theTouch = [touches anyObject];
 	CGPoint point = [theTouch locationInView:nil]; // only used for log
 	NSLog(@"x: %f and y: %f", point.x, point.y);
@@ -85,6 +86,10 @@
 		twoFingers = YES;
 		NSLog(@"%d fingers", [touches count]);
 	}
+	else if([touches count] > 2)
+	{
+		NSLog(@"%d fingers", [touches count]);
+	}	
 	
 	// tell the view to redraw
 	[self setNeedsDisplay];
@@ -93,36 +98,47 @@
 - (void) touchesMoved:(NSSet*)touches withEvent:(UIEvent*)event
 {
 	//NSLog(@"touches moved count %d, %@", [touches count], touches);	
-
-	touches = [event allTouches];
 	
-	if(twoFingers) {
-		NSArray *twoTouches = [touches allObjects];
+	touches = [event allTouches];
 			
+	if(oneFinger)
+	{
+		UITouch *oneTouch = [touches anyObject];
+		CGPoint dragPoint = [oneTouch locationInView:nil]; // only used for log
+		
+		// drag based on finger coordinate
+		centerx = dragPoint.x;
+		centery = dragPoint.y;	
+
+		// output to labels
+		xpField.text = [NSString stringWithFormat:@"%.2f", centerx];
+		ypField.text = [NSString stringWithFormat:@"%.2f", centery]; 
+	}
+	else if(twoFingers)
+	{
+		NSArray *twoTouches = [touches allObjects];
+		
 		// add touch locations to array
 		UITouch *touch1 = [twoTouches objectAtIndex:0];
 		UITouch *touch2 = [twoTouches objectAtIndex:1];
-		
-		// calculate arc tangent for rotation
 		CGPoint currentPoint1 = [touch1 locationInView:nil];
 		CGPoint currentPoint2 = [touch2 locationInView:nil];
-		CGFloat currentAngle = atan2 (currentPoint2.y - currentPoint1.y, currentPoint2.x - currentPoint1.x);
-		
-		rotation = currentAngle;
 
-		// calculate distance between points for transformation
+		// calculate arc tangent for rotation
+		rotation = atan2(currentPoint2.y - currentPoint1.y, currentPoint2.x - currentPoint1.x);
+		
+		// calculate distance between points for translation
 		CGFloat xDifferenceSquared = pow(currentPoint1.x - currentPoint2.x, 2);
 		CGFloat yDifferenceSquared = pow(currentPoint1.y - currentPoint2.y, 2);
-
 		squareSize = sqrt(xDifferenceSquared + yDifferenceSquared);
-
-		// output to labels
-		rField.text = [NSString stringWithFormat:@"%.5f", rotation];
-		sField.text = [NSString stringWithFormat:@"%.5f", squareSize];
 		
-		// tell the view to redraw
-		[self setNeedsDisplay];
+		// output to labels
+		rField.text = [NSString stringWithFormat:@"%.2f", rotation];
+		sField.text = [NSString stringWithFormat:@"%.2f", squareSize];
 	}
+
+	// tell the view to redraw
+	[self setNeedsDisplay];	
 }
 
 
@@ -133,27 +149,32 @@
 	// reset the var
 	oneFinger = NO;
 	twoFingers = NO;
-
+	
 	// tell the view to redraw
 	[self setNeedsDisplay];
 }
 
 - (void) drawRect:(CGRect)rect
 {
-	//NSLog(@"drawRect");
+	if(firstRun) {
+		firstRun = NO;
+		centerx = rect.size.width/2;
+		centery = rect.size.height/2;	
+	}
 	
-	CGFloat centerx = rect.size.width/2;
-	CGFloat centery = rect.size.height/2;
 	CGFloat half = squareSize/2;
 	CGRect theRect = CGRectMake(-half, -half, squareSize, squareSize);
 	
-	// Grab the drawing context
+	// grab the drawing context
 	CGContextRef context = UIGraphicsGetCurrentContext();
 	
-	// like Processing pushMatrix
+	// pushMatrix
 	CGContextSaveGState(context);
 	CGContextTranslateCTM(context, centerx, centery);
-		
+
+	// rotate based on multi-touch
+	CGContextRotateCTM(context, rotation);	
+	
 	if(oneFinger)
 	{
 		CGContextSetRGBStrokeColor(context, 1.0, 0.0, 0.0, 1.0);
@@ -163,25 +184,28 @@
 	{
 		CGContextSetRGBStrokeColor(context, 0.0, 1.0, 1.0, 1.0);
 		CGContextSetRGBFillColor(context, 0.0, 1.0, 1.0, 1.0);	
-		CGContextRotateCTM(context, rotation);	
 	}
 	else
 	{
 		CGContextSetRGBStrokeColor(context, 0.0, 1.0, 0.0, 1.0);
 		CGContextSetRGBFillColor(context, 0.0, 1.0, 0.0, 1.0);
-		CGContextRotateCTM(context, rotation);	
 	} 	
 		
-	// Draw a rect with a red stroke
+	// draw a rect with a red stroke
 	CGContextFillRect(context, theRect);
 	CGContextStrokeRect(context, theRect);
 	
-	// like Processing popMatrix
+	// popMatrix
 	CGContextRestoreGState(context);
 }
 
 - (void) dealloc
 {
+	[xField release];
+	[yField release];
+	[zField release];
+	[rField release];
+	[sField release];
 	[super dealloc];
 }
 

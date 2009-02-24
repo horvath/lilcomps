@@ -99,16 +99,24 @@
 	if(twoFingers) {
 		NSArray *twoTouches = [touches allObjects];
 			
+		// add touch locations to array
 		UITouch *touch1 = [twoTouches objectAtIndex:0];
 		UITouch *touch2 = [twoTouches objectAtIndex:1];
 		
+		// calculate arc tangent for rotation
 		CGPoint currentPoint1 = [touch1 locationInView:nil];
 		CGPoint currentPoint2 = [touch2 locationInView:nil];
 		CGFloat currentAngle = atan2 (currentPoint2.y - currentPoint1.y, currentPoint2.x - currentPoint1.x);
 		
 		rotation = currentAngle;
-		squareSize = currentPoint1.y - currentPoint2.y;
 
+		// calculate distance between points for transformation
+		CGFloat xDifferenceSquared = pow(currentPoint1.x - currentPoint2.x, 2);
+		CGFloat yDifferenceSquared = pow(currentPoint1.y - currentPoint2.y, 2);
+
+		squareSize = sqrt(xDifferenceSquared + yDifferenceSquared);
+
+		// output to labels
 		rField.text = [NSString stringWithFormat:@"%.5f", rotation];
 		sField.text = [NSString stringWithFormat:@"%.5f", squareSize];
 		
@@ -161,6 +169,7 @@
 	{
 		CGContextSetRGBStrokeColor(context, 0.0, 1.0, 0.0, 1.0);
 		CGContextSetRGBFillColor(context, 0.0, 1.0, 0.0, 1.0);
+		CGContextRotateCTM(context, rotation);	
 	} 	
 		
 	// Draw a rect with a red stroke

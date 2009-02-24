@@ -25,13 +25,10 @@
 	// you have to initialize your view here since it's getting
 	// instantiated by the nib
 	squareSize = 100.0f;
-	twoFingers = NO;
+	rotation = 0;
 	oneFinger = NO;
-	rotateLeft = NO;
-	rotateRight = NO;
-	rotationRight = 0.5f;
-	rotationLeft = -0.5f;
-
+	twoFingers = NO;
+	
 	// You have to explicity turn on multitouch for the view
 	self.multipleTouchEnabled = YES;
 	
@@ -41,7 +38,7 @@
 
 -(void)configureAccelerometer
 {
-	UIAccelerometer*  theAccelerometer = [UIAccelerometer sharedAccelerometer];
+	UIAccelerometer* theAccelerometer = [UIAccelerometer sharedAccelerometer];
 	
 	if(theAccelerometer)
 	{
@@ -71,22 +68,16 @@
 {
 	//NSLog(@"touches began count %d, %@", [touches count], touches);
 
-	UITouch *theTouch = [touches anyObject];
-	CGPoint point = [theTouch locationInView:nil]; //only used for log
-	NSLog(@"touches began at x: %f and y: %f", point.x, point.y);
-	
-	if([touches count] == 1 && point.x < 160)
-	{
-		oneFinger = YES;
-		rotateLeft = YES;
-		NSLog(@"%d finger, left side", [touches count]);
-	}
+	touches = [event allTouches];
 
-	else if([touches count] == 1 && point.x > 160)
+	UITouch *theTouch = [touches anyObject];
+	CGPoint point = [theTouch locationInView:nil]; // only used for log
+	NSLog(@"x: %f and y: %f", point.x, point.y);
+	
+	if([touches count] == 1)
 	{
 		oneFinger = YES;
-		rotateRight = YES;
-		NSLog(@"%d finger, right side", [touches count]);
+		NSLog(@"%d finger", [touches count]);
 	}
 	
 	else if([touches count] == 2)
@@ -101,22 +92,40 @@
 
 - (void) touchesMoved:(NSSet*)touches withEvent:(UIEvent*)event
 {
-	//NSLog(@"touches moved count %d, %@", [touches count], touches);
+	//NSLog(@"touches moved count %d, %@", [touches count], touches);	
+
+	touches = [event allTouches];
+	
+	if(twoFingers) {
+		NSArray *twoTouches = [touches allObjects];
+			
+		UITouch *touch1 = [twoTouches objectAtIndex:0];
+		UITouch *touch2 = [twoTouches objectAtIndex:1];
 		
-	// tell the view to redraw
-	[self setNeedsDisplay];
+		CGPoint currentPoint1 = [touch1 locationInView:nil];
+		CGPoint currentPoint2 = [touch2 locationInView:nil];
+		CGFloat currentAngle = atan2 (currentPoint2.y - currentPoint1.y, currentPoint2.x - currentPoint1.x);
+		
+		rotation = currentAngle;
+		squareSize = currentPoint1.y - currentPoint2.y;
+
+		rField.text = [NSString stringWithFormat:@"%.5f", rotation];
+		sField.text = [NSString stringWithFormat:@"%.5f", squareSize];
+		
+		// tell the view to redraw
+		[self setNeedsDisplay];
+	}
 }
+
 
 - (void) touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
 	//NSLog(@"touches moved count %d, %@", [touches count], touches);
 	
 	// reset the var
-	twoFingers = NO;
 	oneFinger = NO;
-	rotateLeft = NO;
-	rotateRight = NO;
-	
+	twoFingers = NO;
+
 	// tell the view to redraw
 	[self setNeedsDisplay];
 }
@@ -137,29 +146,23 @@
 	CGContextSaveGState(context);
 	CGContextTranslateCTM(context, centerx, centery);
 		
-	// Set red stroke
-	CGContextSetRGBStrokeColor(context, 1.0, 0.0, 0.0, 1.0);
-	
-	// Set different based on multitouch
-	if(oneFinger && rotateLeft)
+	if(oneFinger)
 	{
-		CGContextSetRGBFillColor(context, 0.0, 1.0, 1.0, 1.0);	
-		CGContextRotateCTM(context, rotationLeft);
+		CGContextSetRGBStrokeColor(context, 1.0, 0.0, 0.0, 1.0);
+		CGContextSetRGBFillColor(context, 1.0, 0.0, 0.0, 1.0);		
 	}
-	else if(oneFinger && rotateRight)
-	{
-		CGContextSetRGBFillColor(context, 0.0, 1.0, 1.0, 1.0);	
-		CGContextRotateCTM(context, rotationRight);
-	}	
 	else if(twoFingers)
 	{
-		CGContextSetRGBFillColor(context, 1.0, 0.0, 0.0, 1.0);
+		CGContextSetRGBStrokeColor(context, 0.0, 1.0, 1.0, 1.0);
+		CGContextSetRGBFillColor(context, 0.0, 1.0, 1.0, 1.0);	
+		CGContextRotateCTM(context, rotation);	
 	}
 	else
 	{
+		CGContextSetRGBStrokeColor(context, 0.0, 1.0, 0.0, 1.0);
 		CGContextSetRGBFillColor(context, 0.0, 1.0, 0.0, 1.0);
-	}
-	
+	} 	
+		
 	// Draw a rect with a red stroke
 	CGContextFillRect(context, theRect);
 	CGContextStrokeRect(context, theRect);

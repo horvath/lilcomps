@@ -12,18 +12,16 @@
 @interface MyCustomView : UIView 
 {
 	CGFloat                    squareSize;
-	CGFloat                    rotationLeft;
-	CGFloat                    rotationRight;
+	CGFloat                    rotation;
 	CGColorRef                 aColor;
 	BOOL                       twoFingers;
 	BOOL                       oneFinger;
-	BOOL                       rotateLeft;
-	BOOL                       rotateRight;
-	
 	
 	IBOutlet UILabel           *xField;
 	IBOutlet UILabel           *yField;
 	IBOutlet UILabel           *zField;
+	IBOutlet UILabel           *rField;	
+	IBOutlet UILabel           *sField;		
 }
 
 
